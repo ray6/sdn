@@ -37,6 +37,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		datapath = ev.msg.datapath
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
+		dpid = datapath.id
 
         # install table-miss flow entry
         #
@@ -45,6 +46,14 @@ class SimpleSwitch13(app_manager.RyuApp):
         # 128, OVS will send Packet-In with invalid buffer_id and
         # truncated packet data. In that case, we cannot output packets
         # correctly.  The bug has been fixed in OVS v2.1.0.
+		if dpid == 1:
+			match = parser.OFPMatch(in_port=1)
+			actions = [parser.OFPActionOutput(2)]
+			self.add_flow(datapath, 32767, match, actions)
+			match = parser.OFPMatch(in_port=2)
+			actions = [parser.OFPActionOutput(1)]
+			self.add_flow(datapath, 32767, match, actions)
+
 		match = parser.OFPMatch()
 		actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
