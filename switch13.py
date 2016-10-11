@@ -32,6 +32,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3'}
+		self.ip_table = {'10.0.0.1':'00:00:00:00:00:01','10.0.0.2':'00:00:00:00:00:02','10.0.0.3':'00:00:00:00:00:03','10.0.0.4':'00:00:00:00:00:04'}
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
 		datapath = ev.msg.datapath
@@ -101,14 +102,13 @@ class SimpleSwitch13(app_manager.RyuApp):
 		dpid = datapath.id
 		self.mac_to_port.setdefault(dpid, {})
 
+		#self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
-		self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
-
-        # learn a mac address to avoid FLOOD next time.
+                # learn a mac address to avoid FLOOD next time.
 		self.mac_to_port[dpid][src] = in_port
 		#print mac_to_port items
-
+		
 		if dst in self.mac_to_port[dpid]:
 			if self.vtable.get(src) == self.vtable.get(dst):
 				out_port = self.mac_to_port[dpid][dst]
