@@ -79,7 +79,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
 		in_port = msg.match['in_port']
-
+		actions = None
 		pkt = packet.Packet(msg.data)
 		eth = pkt.get_protocols(ethernet.ethernet)[0]
 
@@ -99,23 +99,24 @@ class SimpleSwitch13(app_manager.RyuApp):
         # learn a mac address to avoid FLOOD next time.
 		self.mac_to_port[dpid][src] = in_port
 		#print mac_to_port items
-		print("print mac_to_port")
-		print(self.mac_to_port.items())
 
 		if dst in self.mac_to_port[dpid]:
 			if self.vtable.get(src) == self.vtable.get(dst):
 				out_port = self.mac_to_port[dpid][dst]
+				actions = [parser.OFPActionOutput(out_port)]
 			else:
 				out_port = ofproto.OFPP_FLOOD
 		else:
 			out_port = ofproto.OFPP_FLOOD
+			actions = [parser.OFPActionOutput(out_port)]
 
-		actions = [parser.OFPActionOutput(out_port)]
+		#actions = [parser.OFPActionOutput(out_port)]
 
 
         # install a flow to avoid packet_in next time
 		if out_port != ofproto.OFPP_FLOOD:
 				match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
+				print("Add flow!")
            		# verify if we have a valid buffer_id, if yes avoid to send both
            		# flow_mod & packet_out
 				if msg.buffer_id != ofproto.OFP_NO_BUFFER:
@@ -123,14 +124,15 @@ class SimpleSwitch13(app_manager.RyuApp):
 					return
 				else:
 					self.add_flow(datapath, 1, match, actions)
-		data = None
-		if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-			data = msg.data
 
-		out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+		if actions != None:
+			data = None
+			if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+				data = msg.data
+
+			out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
                                   in_port=in_port, actions=actions, data=data)
-		datapath.send_msg(out)
-
+			datapath.send_msg(out)
 		#switch=ovsk,protocols=openflow13
 		#ovs-vsctl set Bridge s1 (type in xterm)
 		#highest priority 32767
