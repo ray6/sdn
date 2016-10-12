@@ -32,6 +32,8 @@ class SimpleSwitch13(app_manager.RyuApp):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3'}
+		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02', '10.0.0.2', '00:00:00:00:00:03':'10.0.0.3', '00:00:00:00:00:04', '10.0.0.4'}
+		self.ip_to_mac = {'10.0.0.1':'00:00:00:00:00:01', '10.0.0.2':'00:00:00:00:00:02', '10.0.0.3':'00:00:00:00:00:03', '10.0.0.4':'00:00:00:00:00:04'}
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
 		datapath = ev.msg.datapath
@@ -102,7 +104,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		self.mac_to_port.setdefault(dpid, {})
 
 
-		self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
+		#self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
 
         # learn a mac address to avoid FLOOD next time.
@@ -125,7 +127,6 @@ class SimpleSwitch13(app_manager.RyuApp):
         # install a flow to avoid packet_in next time
 		if out_port != ofproto.OFPP_FLOOD:
 				match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-				print("Add flow!")
            		# verify if we have a valid buffer_id, if yes avoid to send both
            		# flow_mod & packet_out
 				if msg.buffer_id != ofproto.OFP_NO_BUFFER:
