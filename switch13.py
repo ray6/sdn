@@ -22,6 +22,9 @@ from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
 
+from ryu.lib.packet import arp
+from ryu.lib.packet import ipv4
+from ryu.lib.packet import icmp
 
 class SimpleSwitch13(app_manager.RyuApp):
 	OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -30,10 +33,18 @@ class SimpleSwitch13(app_manager.RyuApp):
 	#formate 'hw_addr':'dpid'
 	def __init__(self, *args, **kwargs):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
-		self.mac_to_port = {}
+		#self.mac_to_port = {}
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3'}
-		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02', '10.0.0.2', '00:00:00:00:00:03':'10.0.0.3', '00:00:00:00:00:04', '10.0.0.4'}
-		self.ip_to_mac = {'10.0.0.1':'00:00:00:00:00:01', '10.0.0.2':'00:00:00:00:00:02', '10.0.0.3':'00:00:00:00:00:03', '10.0.0.4':'00:00:00:00:00:04'}
+		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02':'10.0.0.2', '00:00:00:00:00:03':'10.0.0.3',
+						'00:00:00:00:00:04':'10.0.0.4', '00:00:00:00:00:05':'10.0.0.5', '00:00:00:00:00:06':'10.0.0.6'}
+
+		self.ip_to_mac = {'10.0.0.1':'00:00:00:00:00:01', '10.0.0.2':'00:00:00:00:00:02', '10.0.0.3':'00:00:00:00:00:03',
+						'10.0.0.4':'00:00:00:00:00:04', '10.0.0.5':'00:00:00:00:00:05', '10.0.0.6':'00:00:00:00:00:06'}
+		self.hw_addr = None
+		self.ip_addr = None
+		self.stable = {}   #datapath to dpid table
+		self.mac_to_switch = {}
+		self.mptable = {}  #mac_to_port 
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
 		datapath = ev.msg.datapath
@@ -48,6 +59,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         # 128, OVS will send Packet-In with invalid buffer_id and
         # truncated packet data. In that case, we cannot output packets
         # correctly.  The bug has been fixed in OVS v2.1.0.
+
 		if dpid == 1:
 			match = parser.OFPMatch(in_port=1)
 			actions = [parser.OFPActionOutput(2)]
@@ -55,6 +67,14 @@ class SimpleSwitch13(app_manager.RyuApp):
 			match = parser.OFPMatch(in_port=2)
 			actions = [parser.OFPActionOutput(1)]
 			self.add_flow(datapath, 32767, match, actions)
+
+		'''if dpid == 2:
+			match = parser.OFPMatch(in_port=1)
+			actions = [parser.OFPActionOutput(2)]
+			self.add_flow(datapath,32767, match, actions)'''
+
+			#match = parser.OFPMatch(in_port=1)
+			#self.del_flow(datapath, match)
 
 		match = parser.OFPMatch()
 		actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
@@ -75,6 +95,147 @@ class SimpleSwitch13(app_manager.RyuApp):
 			mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
                                     match=match, instructions=inst)
 		datapath.send_msg(mod)
+		print("\nAdd\n")
+
+	def del_flow(self, datapath, match, buffer_id=None):
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+
+		cookie = cookie_mask = 0
+		table_id = 0
+		command = ofproto.OFPFC_DELETE
+		idle_timeout = hard_timeout = 0
+		priority = 1
+		#buffer_id = ofproto.OFPCML_NO_BUFFER
+		out_put = ofproto.OFPP_ANY
+		out_group = ofproto.OFPG_ANY
+		flags = 0
+		instructions = []
+
+		if buffer_id:
+			mod = parser.OFPFlowMod(datapath, cookie, cookie_mask, table_id, command,
+										idle_timeout, hard_timeout, priority,
+										buffer_id, out_put, out_group, flags,
+										match, instructions)
+
+		else:
+			buffer_id = ofproto.OFPCML_NO_BUFFER
+			mod = parser.OFPFlowMod(datapath, cookie, cookie_mask, table_id, command,
+										idle_timeout, hard_timeout, priority,
+										buffer_id, out_put, out_group, flags,
+										match, instructions)
+
+
+		datapath.send_msg(mod)
+
+	def out_put_del(self, datapath, out_put, buffer_id=None):
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+
+		cookie = cookie_mask = 0
+		table_id = 0
+		command = ofproto.OFPFC_DELETE
+		idle_timeout = hard_timeout = 0
+		priority = 1
+		#buffer_id = ofproto.OFPCML_NO_BUFFER
+		#out_put = ofproto.OFPP_ANY
+		out_group = ofproto.OFPG_ANY
+		flags = 0
+		match = parser.OFPMatch()
+		instructions = []
+
+		if buffer_id:
+			mod = parser.OFPFlowMod(datapath, cookie, cookie_mask, table_id, command,
+										idle_timeout, hard_timeout, priority,
+										buffer_id, out_put, out_group, flags,
+										match, instructions)
+
+		else:
+			buffer_id = ofproto.OFPCML_NO_BUFFER
+			mod = parser.OFPFlowMod(datapath, cookie, cookie_mask, table_id, command,
+										idle_timeout, hard_timeout, priority,
+										buffer_id, out_put, out_group, flags,
+										match, instructions)
+
+
+		datapath.send_msg(mod)
+		print("\nDelete\n")
+
+
+	def del_all_flow(self, datapath):
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+
+		cookie = cookie_mask = 0
+		table_id = 0
+		command = ofproto.OFPFC_DELETE
+		idle_timeout = hard_timeout = 0
+		priority = 1
+		buffer_id = ofproto.OFPCML_NO_BUFFER
+		out_put = ofproto.OFPP_ANY
+		out_group = ofproto.OFPG_ANY
+		flags = 0
+		match = parser.OFPMatch()
+		instructions = []
+
+
+		mod = parser.OFPFlowMod(datapath, cookie, cookie_mask, table_id, command,
+										idle_timeout, hard_timeout, priority,
+										buffer_id, out_put, out_group, flags,
+										match, instructions)
+
+		datapath.send_msg(mod)
+
+
+
+
+
+	def _handle_arp(self, datapath, in_port, eth_pkt, arp_pkt):
+		if arp_pkt.opcode != arp.ARP_REQUEST:
+			return
+		pkt = packet.Packet()
+		pkt.add_protocol(ethernet.ethernet(ethertype=eth_pkt.ethertype,
+											dst=eth_pkt.src,
+											src=self.hw_addr))
+		pkt.add_protocol(arp.arp(opcode=arp.ARP_REPLY,
+								src_mac=self.hw_addr,
+								src_ip=self.ip_addr,
+								dst_mac=arp_pkt.src_mac,
+								dst_ip=arp_pkt.src_ip))
+
+		self._send_packet(datapath, in_port, pkt)
+
+	def _handle_icmp(self, datapath, in_port, eth_pkt, ipv4_pkt, icmp_pkt):
+		if icmp_pkt.type != icmp.ICMP_ECHO_REQUEST:
+			return
+		pkt = packet.Packet()
+		pkt.add_protocol(ethernet.ethernet(ethertype=eth_pkt.ethertype,
+											dst=eth_pkt.src,
+											src=self.hw_addr))
+		pkt.add_protocol(ipv4.ipv4(dst=ipv4_pkt.src,
+									src=self.ip_addr,
+									proto=ipv4_pkt.proto))
+		pkt.add_protocol(icmp.icmp(type_=icmp.ICMP_ECHO_REPLY,
+									code=icmp.ICMP_ECHO_REPLY_CODE,
+									csum=0,
+									data=icmp_pkt.data))
+		self._send_packet(datapath, in_port, pkt)
+
+	def _send_packet(self, datapath, in_port, pkt):
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+		pkt.serialize()
+	#	self.logger.info("packet-out %s" %(pkt,))
+		data = pkt.data
+
+		actions = [parser.OFPActionOutput(port=in_port)]
+		out = parser.OFPPacketOut(datapath=datapath,
+									buffer_id=ofproto.OFP_NO_BUFFER,
+									in_port=ofproto.OFPP_CONTROLLER,
+									actions=actions,
+									data=data)
+		datapath.send_msg(out)
+
 
 	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
 	def _packet_in_handler(self, ev):
@@ -90,30 +251,79 @@ class SimpleSwitch13(app_manager.RyuApp):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
 		in_port = msg.match['in_port']
-		actions = None
+		actions = None  #initialize actions to None
 		pkt = packet.Packet(msg.data)
 		eth = pkt.get_protocols(ethernet.ethernet)[0]
+
+		if not eth:
+			return
+		arp_pkt = pkt.get_protocol(arp.arp)
+		if arp_pkt:
+			self.hw_addr = self.ip_to_mac[arp_pkt.dst_ip]
+			print("\n")
+			print(self.hw_addr)
+			self.ip_addr = arp_pkt.dst_ip
+			print(self.ip_addr)
+			print("\n")
+			self._handle_arp(datapath, in_port, eth, arp_pkt)
+			return
+		'''ipv4_pkt = pkt.get_protocol(ipv4.ipv4)
+		icmp_pkt = pkt.get_protocol(icmp.icmp)
+		if icmp_pkt:
+			self._handle_icmp(datapath, in_port, eth, ipv4_pkt, icmp_pkt)
+			return'''
 
 		if eth.ethertype == ether_types.ETH_TYPE_LLDP:
             # ignore lldp packet
 			return
+
 		dst = eth.dst
 		src = eth.src
 
+		self.mac_to_switch.setdefault(src)
+		self.mptable.setdefault(src)
+
 		dpid = datapath.id
-		self.mac_to_port.setdefault(dpid, {})
+		'''self.mac_to_port.setdefault(dpid, {})'''
+
+		if not (self.stable.has_key(dpid)):
+			self.stable.update({ dpid : datapath })
 
 
 		#self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
+		# learn a mac address to avoid FLOOD next time.
 
-        # learn a mac address to avoid FLOOD next time.
-		self.mac_to_port[dpid][src] = in_port
-		#print mac_to_port items
+		'''if in_port != self.mac_to_port.get(dpid).get(src):'''
+		if in_port != self.mptable.get(src) or dpid != self.mac_to_switch.get(src):
+			print("The table has changed.\n")
+			for key, value in self.stable.items():
+				if not key == 1 :
+					print("Delete flow on dpid:%d\n"%(key))
+					match = parser.OFPMatch(eth_dst=src)
+					self.del_flow(value, match, msg.buffer_id)
+					match = parser.OFPMatch(eth_src=src)
+					self.del_flow(value, match, msg.buffer_id)
+					print("Match eth_dst=eth_src= %s\n"%(src))
 
-		if dst in self.mac_to_port[dpid]:
-			if self.vtable.get(src) == self.vtable.get(dst):
-				out_port = self.mac_to_port[dpid][dst]
+			print("Fix the table.\n")
+			'''self.mac_to_port[dpid][src] = in_port'''
+			self.mptable[src] = in_port
+			self.mac_to_switch[src] = dpid
+			print("mptable:\n")
+			print(self.mptable.items())
+			print("\n")
+			print("mac_to_switch:\n")
+			print(self.mac_to_switch.items())
+			print("\n")
+
+			#print mac_to_port items
+
+		'''if dst in self.mac_to_port[dpid]:'''
+		if self.mptable.has_key(dst) and self.mac_to_switch.has_key(dst):
+			if self.vtable.get(src) != None and self.vtable.get(src) == self.vtable.get(dst):
+				'''out_port = self.mac_to_port[dpid][dst]'''
+				out_port = self.mptable[dst]
 				actions = [parser.OFPActionOutput(out_port)]
 			else:
 				out_port = ofproto.OFPP_FLOOD
@@ -126,9 +336,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         # install a flow to avoid packet_in next time
 		if out_port != ofproto.OFPP_FLOOD:
-				match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-           		# verify if we have a valid buffer_id, if yes avoid to send both
-           		# flow_mod & packet_out
+				match = parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src)
+				# verify if we have a valid buffer_id, if yes avoid to send both
+				# flow_mod & packet_out
 				if msg.buffer_id != ofproto.OFP_NO_BUFFER:
 					self.add_flow(datapath, 1, match, actions, msg.buffer_id)
 					return
@@ -143,6 +353,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 			out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
                                   in_port=in_port, actions=actions, data=data)
 			datapath.send_msg(out)
+
+#		self.hw_addr = None
+#		self.ip_addr = None
 		#switch=ovsk,protocols=openflow13
 		#ovs-vsctl set Bridge s1 (type in xterm)
 		#highest priority 32767
