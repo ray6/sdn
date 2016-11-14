@@ -33,7 +33,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 	#formate 'hw_addr':'dpid'
 	def __init__(self, *args, **kwargs):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
-		self.mac_to_port = {}
+		#self.mac_to_port = {}
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3'}
 		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02':'10.0.0.2', '00:00:00:00:00:03':'10.0.0.3',
 						'00:00:00:00:00:04':'10.0.0.4', '00:00:00:00:00:05':'10.0.0.5', '00:00:00:00:00:06':'10.0.0.6'}
@@ -43,6 +43,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		self.hw_addr = None
 		self.ip_addr = None
 		self.stable = {}   #datapath to dpid table
+
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
 		datapath = ev.msg.datapath
@@ -278,8 +279,14 @@ class SimpleSwitch13(app_manager.RyuApp):
 		dst = eth.dst
 		src = eth.src
 
+		self.mac_to_switch.setdefault(src)
+		self.mptable.setdefault(src)
+
 		dpid = datapath.id
-		self.mac_to_port.setdefault(dpid, {})
+		'''self.mac_to_port.setdefault(dpid, {})'''
+
+		if not (self.stable.has_key(dpid)):
+			self.stable.update({ dpid : datapath })
 
 		self.stable.setdefault(dpid, datapath)
 
@@ -314,6 +321,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		if dst in self.mac_to_port[dpid]:
 			if self.vtable.get(src) != None and self.vtable.get(src) == self.vtable.get(dst):
 				out_port = self.mac_to_port[dpid][dst]
+
 				actions = [parser.OFPActionOutput(out_port)]
 			else:
 				out_port = ofproto.OFPP_FLOOD
