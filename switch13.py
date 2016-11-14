@@ -33,7 +33,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 	#formate 'hw_addr':'dpid'
 	def __init__(self, *args, **kwargs):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
-		#self.mac_to_port = {}
+		self.mac_to_port = {}
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3'}
 		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02':'10.0.0.2', '00:00:00:00:00:03':'10.0.0.3',
 						'00:00:00:00:00:04':'10.0.0.4', '00:00:00:00:00:05':'10.0.0.5', '00:00:00:00:00:06':'10.0.0.6'}
@@ -43,8 +43,6 @@ class SimpleSwitch13(app_manager.RyuApp):
 		self.hw_addr = None
 		self.ip_addr = None
 		self.stable = {}   #datapath to dpid table
-		self.mac_to_switch = {}
-		self.mptable = {}  #mac_to_port 
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
 		datapath = ev.msg.datapath
@@ -280,22 +278,24 @@ class SimpleSwitch13(app_manager.RyuApp):
 		dst = eth.dst
 		src = eth.src
 
-		self.mac_to_switch.setdefault(src)
-		self.mptable.setdefault(src)
-
 		dpid = datapath.id
-		'''self.mac_to_port.setdefault(dpid, {})'''
+		self.mac_to_port.setdefault(dpid, {})
 
-		if not (self.stable.has_key(dpid)):
-			self.stable.update({ dpid : datapath })
+		self.stable.setdefault(dpid, datapath)
 
+		self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+		print("mptable:\n")
+		print(self.mptable.items())
+		print("\n")
+		print("mac_to_switch:\n")
+		print(self.mac_to_switch.items())
+		print("\n")
 
 		#self.logger.info("packet in %s %s %s %s %s", dpid, src, dst, in_port, eth)
 
 		# learn a mac address to avoid FLOOD next time.
 
-		'''if in_port != self.mac_to_port.get(dpid).get(src):'''
-		if in_port != self.mptable.get(src) or dpid != self.mac_to_switch.get(src):
+		if in_port != self.mac_to_port.get(dpid).get(src):
 			print("The table has changed.\n")
 			for key, value in self.stable.items():
 				if not key == 1 :
@@ -307,23 +307,13 @@ class SimpleSwitch13(app_manager.RyuApp):
 					print("Match eth_dst=eth_src= %s\n"%(src))
 
 			print("Fix the table.\n")
-			'''self.mac_to_port[dpid][src] = in_port'''
-			self.mptable[src] = in_port
-			self.mac_to_switch[src] = dpid
-			print("mptable:\n")
-			print(self.mptable.items())
-			print("\n")
-			print("mac_to_switch:\n")
-			print(self.mac_to_switch.items())
-			print("\n")
+			self.mac_to_port[dpid][src] = in_port
 
 			#print mac_to_port items
 
-		'''if dst in self.mac_to_port[dpid]:'''
-		if self.mptable.has_key(dst) and self.mac_to_switch.has_key(dst):
+		if dst in self.mac_to_port[dpid]:
 			if self.vtable.get(src) != None and self.vtable.get(src) == self.vtable.get(dst):
-				'''out_port = self.mac_to_port[dpid][dst]'''
-				out_port = self.mptable[dst]
+				out_port = self.mac_to_port[dpid][dst]
 				actions = [parser.OFPActionOutput(out_port)]
 			else:
 				out_port = ofproto.OFPP_FLOOD
