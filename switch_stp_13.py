@@ -187,10 +187,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 				match=parser.OFPMatch(eth_dst=src)
 				self.del_flow(value,match,msg.buffer_id)
-				del self.mac_to_port[dpid]
 				match=parser.OFPMatch(eth_src=src)
 				self.del_flow(value,match,msg.buffer_id)
-				del self.mac_to_port[dpid]	
+					
 				print("Match eth_dst=eth_src=%s\n"%(src))
 
 			#	self.mac_to_port[key][src]=1				
