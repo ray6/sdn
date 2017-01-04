@@ -18,6 +18,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		super(SimpleSwitch13, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 		self.stp = kwargs['stplib']
+
 		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', 
 			       '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3',
 			       '00:00:00:00:00:05':'2','00:00:00:00:00:06':'3'}
@@ -30,15 +31,12 @@ class SimpleSwitch13(app_manager.RyuApp):
 		self.hw_addr=None
 		self.ip_addr=None
 		self.stable={} 
+
 		#datapath to pid table
 		# Sample of stplib config.
 		#  please refer to stplib.Stp.set_config() for details.
 		config = {dpid_lib.str_to_dpid('0000000000000001'):
-		             {'bridge': {'priority': 0x8000}},
-		          dpid_lib.str_to_dpid('0000000000000002'):
-		             {'bridge': {'priority': 0x9000}},
-		          dpid_lib.str_to_dpid('0000000000000003'):
-		             {'bridge': {'priority': 0xa000}}}
+
 		self.stp.set_config(config)
 
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -69,12 +67,12 @@ class SimpleSwitch13(app_manager.RyuApp):
 			mod = parser.OFPFlowMod(datapath=datapath,buffer_id=buffer_id,
                                     priority=priority, match=match,
                                     instructions=inst)
+
 		else:
 			mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
 						match=match, instructions=inst)
 		datapath.send_msg(mod)
-		print("add flow!!")
-		print("\n")
+
 	def del_flow(self,datapath,match,buffer_id=None):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
@@ -92,7 +90,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		inst = None
 
 		if buffer_id:
-	
+
 			req = parser.OFPFlowMod(datapath,cookie,cookie_mask,table_id,
 						command,idle_timeout,hard_timeout,
 						priority,buffer_id,out_port,
@@ -102,7 +100,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 						command,idle_timeout,hard_timeout,
 						priority,ofproto.OFPCML_NO_BUFFER,out_port,
 						out_group,0,match,inst)
-			
+
 		datapath.send_msg(req)
 		print("delete flow!!")
 		print("\n")
@@ -130,11 +128,11 @@ class SimpleSwitch13(app_manager.RyuApp):
 					 dst_ip=pkt_arp.src_ip))
 		self._send_packet(datapath,in_port,pkt)
 					
+
 	def _send_packet(self,datapath,in_port,pkt):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
 		pkt.serialize()
-		
 	#	self.logger.info("packt-out %s"%(pkt,))
 	#	print("\n")
 		data = pkt.data
@@ -248,6 +246,5 @@ class SimpleSwitch13(app_manager.RyuApp):
 		            stplib.PORT_STATE_LEARN: 'LEARN',
 		            stplib.PORT_STATE_FORWARD: 'FORWARD'}
 		self.logger.debug("[dpid=%s][port=%d] state=%s",dpid_str, ev.port_no, of_state[ev.port_state])
-
 
 
