@@ -1,8 +1,8 @@
 '''
 SDN project testing topo
-       s1
+ host- s1-host
       /  \
-     s2  s3
+     s2--s3
      |    |
    host.. host...
 

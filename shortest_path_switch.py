@@ -165,12 +165,14 @@ class ShortestPath(app_manager.RyuApp):
 		if not eth:
 			return
 
-		arp_pkt=pkt.get_protocol(arp.arp)
+		arp_pkt = pkt.get_protocol(arp.arp)
+
 		if arp_pkt:
 			self.hw_addr = self.ip_to_mac[arp_pkt.dst_ip]
 			self.ip_addr = arp_pkt.dst_ip
 			self._handle_arp(datapath, in_port, eth, arp_pkt)
 			return
+
 
 		dst = eth.dst
 		src = eth.src
@@ -179,21 +181,21 @@ class ShortestPath(app_manager.RyuApp):
 		self.mac_to_dp.setdefault(src, datapath)
 
 		if src not in self.directed_Topo:
-			if src in self.vtable:
-				print("add node" + src)
-				self.directed_Topo.add_node(src)
-				self.directed_Topo.add_edge(dpid, src, {'port':in_port})
-				self.directed_Topo.add_edge(src, dpid)
+			print("add node" + src)
+			self.directed_Topo.add_node(src)
+			self.directed_Topo.add_edge(dpid, src, {'port':in_port})
+			self.directed_Topo.add_edge(src, dpid)
 
-				if src in self.vtable:
-					self.host_cnt += 1
-					if self.host_cnt == self.host_num:
-						self.default_path_install(ev)
+			if src in self.vtable:
+				self.host_cnt += 1
+				if self.host_cnt == self.host_num:
+					self.default_path_install(ev)
 
 		if dst in self.directed_Topo:
 			print("dst in Topo")
 			if vtable[src] == vtable[dst]:
 				path = nx.shortest_path(self.directed_Topo, src, dst)
+
 
 				if dpid not in path:
 					return
@@ -202,6 +204,8 @@ class ShortestPath(app_manager.RyuApp):
 				actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
 			else:
 				actions = []
+				#drop
+
 		else:
 			out_port = ofproto.OFPP_FLOOD
 			actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
@@ -210,10 +214,15 @@ class ShortestPath(app_manager.RyuApp):
 		if out_port != ofproto.OFPP_FLOOD:
 			if pkt_ipv4.dst not in self.ip_to_mac:
 				return
-			match = parser.OFPMatch(eth_src=src,eth_dst=dst)
+
+			match = parser.OFPMatch(eth_src=src,
+									eth_dst=dst,)
 			self.add_flow(datapath, 1, match, actions, msg.buffer_id)
 
-		out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,buffer_id=msg.buffer_id,
-									in_port=in_port,actions=actions)
-		datapath.send_msg(out)
+			out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,
+														buffer_id=msg.buffer_id,
+														in_port=in_port,
+														actions=actions)
+			datapath.send_msg(out)
+
 
