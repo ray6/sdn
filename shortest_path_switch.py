@@ -124,10 +124,11 @@ class ShortestPath(app_manager.RyuApp):
 
 
 	def default_path_install(self, ev):
+		print "default_path_install is called"
 		for src in self.vtable:
-			for dst in self.vatable:
+			for dst in self.vtable:
 				if src != dst:
-					if self.vatable[src] == self.vtable[dst]:
+					if self.vtable[src] == self.vtable[dst]:
 						path = nx.shortest_path(self.directed_Topo, src, dst)
 						str_path = str(path).replace(', ', ',')
 						print path
@@ -152,70 +153,67 @@ class ShortestPath(app_manager.RyuApp):
 
 		if ev.msg.msg_len < ev.msg.total_len:
 			self.logger.debug("packet truncated: only %s of %s bytes", ev.msg.msg_len, ev.msg.total_len)
-			msg = ev.msg
-			datapath = msg.datapath
-			ofproto = datapath.ofproto
-			parser = datapath.ofproto_parser
-			in_port = msg.match['in_port']
-			actions = None
-			pkt = packet.Packet(msg.data)
-			eth = pkt.get_protocols(ethernet.ethernet)[0]
+		msg = ev.msg
+		datapath = msg.datapath
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+		in_port = msg.match['in_port']
+		actions = None
+		pkt = packet.Packet(msg.data)
+		eth = pkt.get_protocols(ethernet.ethernet)[0]
 
-			if not eth:
-				#return
+		if not eth:
+			return
 
-			arp_pkt  = pkt.get_protocol(arp.arp)
-			if arp_pkt:
-				self.hw_addr = self.ip_to_mac[arp_pkt.dst_ip]
-				self.ip_addr = arp_pkt.dst_ip
-				self._handle_arp(datapath, in_pot, eth, arp_pkt)
-				return
+		arp_pkt=pkt.get_protocol(arp.arp)
+		if arp_pkt:
+			self.hw_addr = self.ip_to_mac[arp_pkt.dst_ip]
+			self.ip_addr = arp_pkt.dst_ip
+			self._handle_arp(datapath, in_port, eth, arp_pkt)
+			return
 
-			dst = eth.dst
-			src = eth.src
+		dst = eth.dst
+		src = eth.src
 
-			dpid = datapath.id
-			self.mac_to_dp.setdefault(src, datapath)
+		dpid = datapath.id
+		self.mac_to_dp.setdefault(src, datapath)
 
-			if src not in self.directed_Topo:
+		if src not in self.directed_Topo:
+			if src in self.vtable:
+				print("add node" + src)
+				self.directed_Topo.add_node(src)
+				self.directed_Topo.add_edge(dpid, src, {'port':in_port})
+				self.directed_Topo.add_edge(src, dpid)
+
 				if src in self.vtable:
-					print("add node" + src)
-					self.directed_Topo.add_node(src)
-					self.directed_Topo.add_edge(dpid, src, {'port':in_port})
-					self.directed_Topo.add_edge(src, dpid)
+					self.host_cnt += 1
+					if self.host_cnt == self.host_num:
+						self.default_path_install(ev)
 
-					if src in self.vtable:
-						self.host_cnt += 1
-						if self.host_cnt == self.host_num:
-							self.default_path_install(ev)
+		if dst in self.directed_Topo:
+			print("dst in Topo")
+			if vtable[src] == vtable[dst]:
+				path = nx.shortest_path(self.directed_Topo, src, dst)
 
-			if dst in self.directed_Topo:
-				print("dst in Topo")
-				if vtable[src] == vtable[dst]:
-					path = nx.shortest_path(self.directed_Topo, src, dst)
-
-					if dpid not in path:
-						return
-					next = path[path.index(dpid)+1]
-					out_port = self.directed_Topo[dpid][next]['port']
-					actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-				else:
-					actions = []
-			else:
-				out_port = ofproto.OFPP_FLOOD
-				actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-
-
-			if out_port != ofproto.OFPP_FLOOD:
-				if pkt_ipv4.dst not in self.ip_to_mac:
+				if dpid not in path:
 					return
-				match = parser.OFPMatch(eth_src=src,
-										eth_dst=dst,)
-				self.add_flow(datapath, 1, match, actions, msg.buffer_id)
+				next = path[path.index(dpid)+1]
+				out_port = self.directed_Topo[dpid][next]['port']
+				actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
+			else:
+				actions = []
+		else:
+			out_port = ofproto.OFPP_FLOOD
+			actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
 
-			out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,
-														buffer_id=msg.buffer_id,
-														in_port=in_port,
-														actions=actions)
-			datapath.send_msg(out)
+
+		if out_port != ofproto.OFPP_FLOOD:
+			if pkt_ipv4.dst not in self.ip_to_mac:
+				return
+			match = parser.OFPMatch(eth_src=src,eth_dst=dst)
+			self.add_flow(datapath, 1, match, actions, msg.buffer_id)
+
+		out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,buffer_id=msg.buffer_id,
+									in_port=in_port,actions=actions)
+		datapath.send_msg(out)
 
