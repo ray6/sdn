@@ -51,6 +51,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 		dpid = datapath.id
 
+
         # install table-miss flow entry
         #
         # We specify NO BUFFER to max_len of the output action due to
@@ -126,21 +127,6 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 		self._send_packet(datapath, in_port, pkt)
 
-	def _handle_icmp(self, datapath, in_port, eth_pkt, ipv4_pkt, icmp_pkt):
-		if icmp_pkt.type != icmp.ICMP_ECHO_REQUEST:
-			return
-		pkt = packet.Packet()
-		pkt.add_protocol(ethernet.ethernet(ethertype=eth_pkt.ethertype,
-											dst=eth_pkt.src,
-											src=self.hw_addr))
-		pkt.add_protocol(ipv4.ipv4(dst=ipv4_pkt.src,
-									src=self.ip_addr,
-									proto=ipv4_pkt.proto))
-		pkt.add_protocol(icmp.icmp(type_=icmp.ICMP_ECHO_REPLY,
-									code=icmp.ICMP_ECHO_REPLY_CODE,
-									csum=0,
-									data=icmp_pkt.data))
-		self._send_packet(datapath, in_port, pkt)
 
 	def _send_packet(self, datapath, in_port, pkt):
 		ofproto = datapath.ofproto
