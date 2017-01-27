@@ -41,4 +41,4 @@ class LoopTopo( Topo ):
 		self.addLink( s3, h5 )
 		self.addLink( s3, h6 )
 
-topos = { 'LoopTopo': ( lambda: LoopTopo() ) }
+topos = { 'Loop': ( lambda: LoopTopo() ) }
