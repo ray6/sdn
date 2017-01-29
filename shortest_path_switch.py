@@ -248,9 +248,7 @@ class ShortestPath(app_manager.RyuApp):
 				out_port = self.directed_Topo[dpid][next]['port']
 
 				actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-				match = datapath.ofproto_parser.OFPMatch(eth_src=src,eth_dst=dst)
-				print"add flow"
-				self.add_flow(datapath,1,match,actions,msg.buffer_id)
+
 		
 			else:
 				actions = []
