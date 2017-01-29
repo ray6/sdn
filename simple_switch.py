@@ -135,8 +135,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		print("delete flow!!")
 		print("\n")
 
-
-     	def _handle_arp(self,datapath,in_port,pkt_eth,pkt_arp):
+	def _handle_arp(self,datapath,in_port,pkt_eth,pkt_arp):
 		if pkt_arp.opcode != arp.ARP_REQUEST:
 			return
 		pkt = packet.Packet()
