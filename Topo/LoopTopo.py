@@ -1,6 +1,6 @@
 '''
 SDN project testing topo
-       s1
+ host- s1-host
       /  \
      s2--s3
      |    |
@@ -42,3 +42,4 @@ class LoopTopo( Topo ):
 		self.addLink( s3, h6 )
 
 topos = { 'Loop': ( lambda: LoopTopo() ) }
+
