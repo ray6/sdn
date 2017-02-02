@@ -1,6 +1,6 @@
 from mininet.topo import Topo
 
-class MyTopo(Topo):
+class Grid(Topo):
 	def __init__(self,**opts):
 		Topo.__init__(self, **opts)
 		srcHost1 = self.addHost('h1')
@@ -30,4 +30,4 @@ class MyTopo(Topo):
 
 	def addRightLink(self, index, n):
 		self.addLink(self.switch[index], self.switch[index+1])
-topos = { 'mytopo': ( lambda: MyTopo() ) }
+topos = { 'Grid3': ( lambda: Grid() ) }
