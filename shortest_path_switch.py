@@ -218,22 +218,55 @@ class ShortestPath(app_manager.RyuApp):
 		dpid = datapath.id
 		self.mac_to_dp.setdefault(src, datapath)
 		self.mac_to_port.setdefault(dpid,{})
-		self.stable.setdefault(dpid,datapath)
-
-		if src not in self.directed_Topo:
-			if src in self.vtable:
+		self.stable.setdefault(dpid,datapath)		
+			
+		if src in self.vtable:
+			if src not in self.directed_Topo:
 				print("add node " + src)
 				self.directed_Topo.add_node(src)
 				self.directed_Topo.add_edge(dpid, src, {'port':in_port})
 				self.directed_Topo.add_edge(src, dpid)
 				self.mac_to_port[dpid][src]=in_port
-			
-				if src in self.vtable:
-					self.host_cnt += 1
-					if self.host_cnt == self.host_num:
-						self.default_path_install(ev)
+				self.host_cnt += 1
+				if self.host_cnt == self.host_num:
+					self.default_path_install(ev)
+				print self.directed_Topo.edges()
+			else:
+				if in_port != self.mac_to_port.get(dpid).get(src):
+					self.host_cnt-=1
+
+					#update mac_to_port table
+					self.tmp = copy.deepcopy(self.mac_to_port)
+					for key,value in self.mac_to_port[dpid].items():
+						if value == in_port:
+							del self.tmp[dpid][key]
+							
+					self.mac_to_port = copy.deepcopy(self.tmp)
+					self.mac_to_port[dpid][src] = in_port
 				
-				print self.directed_Topo.edges()	
+					print("The table has changed")
+					print("\n")
+
+					#change graph
+					self.directed_Topo.remove_node(src)
+					if dst in self.vtable:
+						if self.vtable[src] == self.vtable[dst]:
+							path = nx.shortest_path(self.directed_Topo, src, dst)
+
+					#delete flows
+					for key,value in self.stable.items():
+						print("Delete flow on dpid: %d\n"%(key))
+
+						match=parser.OFPMatch(eth_dst=src)
+						self.del_flow(value,match,msg.buffer_id)
+						match=parser.OFPMatch(eth_src=src)
+						self.del_flow(value,match,msg.buffer_id)
+						print("Match eth_dst=eth_src=%s\n"%(src))
+						print("Fix the table")
+					print "directed_Topo data:\n"
+					print(self.directed_Topo.edges())
+		 
+		
 		if dst in self.directed_Topo:
 			print("dst in Topo "+dst)
 		
@@ -257,42 +290,8 @@ class ShortestPath(app_manager.RyuApp):
 			out_port = ofproto.OFPP_FLOOD
 			actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
 		
-		#handle change port
-		if src in self.directed_Topo:
-			
-			if in_port != self.mac_to_port.get(dpid).get(src):
-				self.host_cnt-=1
-				#update mac_to_port table
-				self.tmp = copy.deepcopy(self.mac_to_port)
-				for key,value in self.mac_to_port[dpid].items():
-					if value == in_port:
-						del self.tmp[dpid][key]
-							
-				self.mac_to_port = copy.deepcopy(self.tmp)
-				self.mac_to_port[dpid][src] = in_port
-				
-				print("The table has changed")
-				print("\n")
-
-				#change graph
-
-				self.directed_Topo.remove_node(src)
-
-				#delete flows
-				for key,value in self.stable.items():
-					print("Delete flow on dpid: %d\n"%(key))
-
-					match=parser.OFPMatch(eth_dst=src)
-					self.del_flow(value,match,msg.buffer_id)
-					match=parser.OFPMatch(eth_src=src)
-					self.del_flow(value,match,msg.buffer_id)
-					print("Match eth_dst=eth_src=%s\n"%(src))
-			
-					print("Fix the table")
-
-				print "directed_Topo data:\n"
-				print(self.directed_Topo.edges(data = True))
-
+		
+		
 		if out_port != ofproto.OFPP_FLOOD:
 
 			match = parser.OFPMatch(eth_src=src,eth_dst=dst)
