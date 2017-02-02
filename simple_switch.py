@@ -61,6 +61,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 		dpid = datapath.id
 
+		self.default_datapath = datapath
 
         # install table-miss flow entry
 		match = parser.OFPMatch()
@@ -116,6 +117,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 	def SimpleSwitchDeleteFlow(self, datapath, *args):
 		parser = datapath.ofproto_parser
+		parser = datapath.ofproto_parser
 		for key, value in self.stable.items():
 			for arg in args:
 				match = parser.OFPMatch(eth_dst=arg)
@@ -165,7 +167,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 		actions = None  #initialize actions to None
 		out_port = None #initialize out_port to None
-		self.default_datapath = datapath
+
 		#access ARP package
 		pkt = packet.Packet(msg.data)
 		eth = pkt.get_protocols(ethernet.ethernet)[0]
