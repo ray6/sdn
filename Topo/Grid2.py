@@ -6,6 +6,9 @@ class Grid(Topo):
     srcHost1 = self.addHost('h1')
     srcHost2 = self.addHost('h2')
     dstHost = self.addHost('h3')
+    h4 = self.addHost('h4')
+    h5 = self.addHost('h5')
+    h6 = self.addHost('h6')
 
     n = 2
     self.switch = {}
@@ -24,6 +27,10 @@ class Grid(Topo):
     self.addLink(self.switch[0],srcHost1, )
     self.addLink(self.switch[0],srcHost2, )
     self.addLink(self.switch[n*n-1],dstHost, )
+
+    self.addLink(self.switch[1], h4)
+    self.addLink(self.switch[1], h5)
+    self.addLink(self.switch[2], h6)
 
   def addDownLink(self, index, n):
     self.addLink(self.switch[index], self.switch[index+n])
