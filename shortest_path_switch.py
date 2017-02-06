@@ -10,13 +10,9 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet, ethernet, ether_types
 from ryu.lib.packet import arp, ipv4
 
-from ryu.lib import stplib
-from ryu.lib import dpid as dpid_lib
 from ryu.topology.api import get_switch, get_link, get_host
 
-from ryu.app.wsgi import ControllerBase
 from ryu.topology import event, switches
-from ryu.lib import hub
 
 import networkx as nx
 
@@ -198,22 +194,9 @@ class ShortestPath(app_manager.RyuApp):
 			for dst in self.vtable:
 				if src != dst:
 					if self.vtable[src] == self.vtable[dst]:
-						#Compute shortest path
-						path = nx.shortest_path(self.directed_Topo, src, dst)
-						#render path
-						str_path = str(path).replace(', ', ',')
-						self.path_db.append(path)
 
-						#Add Flow along with the path
-						for k, sw in enumerate(self.switches):
-							if sw in path:
-								next = path[path.index(sw)+1]
+						self.ShortestPathInstall(ev, src, dst)
 
-								out_port = self.directed_Topo[sw][next]['port']
-
-								actions = [self.switches_dp[k].ofproto_parser.OFPActionOutput(out_port)]
-								match = self.switches_dp[k].ofproto_parser.OFPMatch(eth_src=src, eth_dst=dst)
-								self.add_flow(self.switches_dp[k], 1, match, actions, ev.msg.buffer_id)
 					else:
 						actions = []
 						match = self.mac_to_dp[src].ofproto_parser.OFPMatch(eth_src=src,eth_dst=dst)
@@ -223,9 +206,10 @@ class ShortestPath(app_manager.RyuApp):
 			#Compute shortest path
 			path = nx.shortest_path(self.directed_Topo, src, dst)
 
-			#render path
+			#Backup path
 			str_path = str(path).replace(', ', ',')
 			self.path_db.append(path)
+
 			#Add Flow along with the path
 			for k, sw in enumerate(self.switches):
 				if sw in path:
