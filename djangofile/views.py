@@ -8,35 +8,51 @@ SOCKFILE = '/tmp/hello_sock'
 
 def vlan(request):
 	users = {"Ray":"00:00:00:00:00:01",
-				"Han":"00:00:00:00:00:02"}
-	user_v = {"Ray":"1", "Han":"2"}
+				"Han":"00:00:00:00:00:02",
+				"Mira":"00:00:00:00:00:03",
+				"Rou":"00:00:00:00:00:04",
+				"Firi":"00:00:00:00:00:05",
+				"Haha":"00:00:00:00:00:06"}
 
-	vtable = {"00:00:00:00:00:01":"1",
-				"00:00:00:00:00:02":"1",
-				"00:00:00:00:00:03":"1",
-				"00:00:00:00:00:04":"2",
-				"00:00:00:00:00:05":"2",
-				"00:00:00:00:00:06":"2"}
+	user_v = {"Ray":"1", "Han":"2", "Mira":"3",
+				"Rou":"3", "Firi":"4", "Haha":"4"}
+	vlan_list = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
 
 	if request.method == 'GET':
-		sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+		vtable = {}
+		for name, mac in users.items():
+			vtable.update({ mac : user_v[name] })
+
 		data = vtable_trans(vtable)
+
+		sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
 		try:
 			sock.connect(SOCKFILE)
 			sock.sendall(data)
 		except Exception, ex:
 			print ex
-			print 'connect error'
+			print("connet error")
 
 		return render(request, 'controller/vlan.html', locals())
+
 	if request.method == 'POST':
-		print("POST")
-		print(request.POST)
-		print(request.POST['vlan'])
-		print(request.POST['user'])
-		new_vlan = request.POST['vlan']
-		vtable["00:00:00:00:00:01"] = new_vlan[4]
-		print(vtable["00:00:00:00:00:01"])
+		sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+		#get data from the POST request
+		post_user = request.POST['user']
+		post_vlan = request.POST['vlan'][4]
+		user_v[post_user] = post_vlan
+		new={users[post_user] : user_v[post_user]}
+		data = vtable_trans(new)
+
+		try:
+			sock.connect(SOCKFILE)
+			sock.sendall(data)
+		except Exception, ex:
+			print ex
+			print("connet error")
+
 		return render(request, 'controller/vlan.html', locals())
 
 def vtable_trans(vtable):
