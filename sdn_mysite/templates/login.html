@@ -1,0 +1,15 @@
+<html>
+	<head>
+		<title>Login</title>
+	</head>
+	<body>
+		<h2> Login </h2>
+		<form action="" method = "post">
+			<label for="username">Your name:</label>{% csrf_token %}
+			<input type="text" name="username" value="{{username}}" id="username"><br />
+			<label for "password">Password:</label>
+			<input type="password" name="password" value="" id="password"><br />
+			<input type="submit" value="enter">
+		</form>
+	</body>
+</html>

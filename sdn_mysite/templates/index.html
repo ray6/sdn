@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Index</title>
+		<meta charset="utf-8">
+	</head>
+	<style type="text/css">
+		body {
+			margin: 0;
+		}
+		ul.navbar {
+			position: fixed;
+			top: 0;
+			width: 100%;
+			padding: 0;
+			margin: 0;
+			background-color: #333;
+			list-style-type: none;
+			overflow: hidden;
+
+		}
+		
+		ul.navbar li {
+			float: left;
+    		/*border-left: 1px solid #bbb;
+    		border-right: 1px solid #bbb;*/
+
+		}
+		ul.navbar li a {
+			text-decoration: none;
+			text-align: center;
+			display: block;
+			padding: 14px 16px;
+			color: white;
+
+		}
+		.active:hover {
+    		background-color: #111;
+		}
+	</style>
+	<body>
+		<ul style="" class="navbar">
+  			<li><a class="active" href="#home">User Interface</a></li>
+  			<li style="float: right;" ><a class="user" href="#User">{{request.user}}</a></li>
+  			<li style="float: right;"><a href="/accounts/register">register</a></li>
+		</ul>
+		<h2>User</h2>
+		{% if request.user.is_authenticated %}
+			<p>{{ request.user }} ~ You are login.
+			<a href="/accounts/logout/"> Logout </a>
+			</p>
+			<form action= "" method="post">{% csrf_token %}
+
+			<p> Your Mac Address : {{ mac }} </p>
+			
+		{% else %}
+			<p>You are not login.<a href="/accounts/login">Login</a></p>
+			<p>If you don't have any account, please <a href="/accounts/register">register.</a></p>
+		{% endif %}
+		
+
+	</body>
+</html>

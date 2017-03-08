@@ -1,0 +1,15 @@
+<html>
+	<head>
+		<title>Logout</title>
+	</head>
+	<body>
+		<form method = "post" action="{% url 'django.contrib.auth.views.logout' %}">
+		{% csrf_token %}
+		<table>
+			{{ form.as_table }}
+		</table>
+		<input type = "submit" value="logout" />
+		<input type = "hidden" name="next" value="{{ next }}" />
+		</form>
+	</body>
+</html>
