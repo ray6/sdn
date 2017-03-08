@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.views import login, logout
 from django.contrib.auth.decorators import login_required
 from controller.views import vlan_admin
-from views import index, register, login 
+from sdn_mysite.views import index, register, login 
 admin.autodiscover()
 urlpatterns = patterns('',
     # Examples:

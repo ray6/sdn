@@ -1,77 +1,15 @@
 <html>
 	<head>
 		<title>Login</title>
-		<meta charset="utf-8">
-		<link rel="stylesheet" type="text/css" href="semantic.min.css">
 	</head>
-	<style type="text/css">
-		body { 
-			margin: 0;
-			overflow: hidden;
-			background-color: #f9f9f9;
-		}
-		
-		form {
-			margin: 80px auto 0 auto; 
-
-		}
-		.block {
-			width: 302px;
-			height: 276px;
-			padding: 20px;
-			margin: auto;
-			border: 1px solid #d8dee2;
-			background-color: white;
-			border-radius: 5px;
-
-		}
-		form h2 {
-			text-align: center;
-		}
-		.ui.form .field label {
-			font-size: 1.12857143em;
-			margin-bottom: 7px;
-		}
-		.ui.form .field {
-			margin: 0 0 1.5em;
-		}
-		.ui.button {
-			width: 100%;
-			height: 40px;
-			margin-top: 10px;
-			border-radius: 5px;
-			background-color: #ffcccc;
-			font-size: 15px;
-		}
-		.ui.button:hover {
-			background-color: #ffb3b3;
-		}
-		.create {
-			text-align: center;
-			margin-top: 10px;
-			font-size: 1.2em;
-		}
-	</style>
 	<body>
-		<form class="ui form" action="" method = "post">
-			<h2> Sign in to Network </h2>
-			{% csrf_token %}
-			<div class="block">
-				<div class="field">
-				<label for="username">Your name:</label>
-				<input type="text" name="username" value="{{username}}" id="username"><br />
-			</div>
-			<div class="field">
-				<label for="password">Password:</label>
-				<input type="password" name="password" value="" id="password"><br />
-			</div>
-			
-			<input class="ui button" type="submit" value="Sign in">
-			</div>
-			
+		<h2> Login </h2>
+		<form action="" method = "post">
+			<label for="username">Your name:</label>{% csrf_token %}
+			<input type="text" name="username" value="{{username}}" id="username"><br />
+			<label for "password">Password:</label>
+			<input type="password" name="password" value="" id="password"><br />
+			<input type="submit" value="enter">
 		</form>
-		<p class="create">Have no account? <a href="/accounts/register">register</a></p>
-		
 	</body>
-	
 </html>

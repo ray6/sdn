@@ -30,15 +30,16 @@ def logout(request):
 	auth.logout(request)
 	return HttpResponseRedirect('/accounts/logout/')
 def register(request):
+	s = "%12x" % uuid.getnode()
+	mac = ":".join(x+y for x, y in zip(s[::2], s[1::2]))
+
 	if request.method == 'POST':
 		form = UserCreationForm(request.POST)
 		
 		if form.is_valid():
 			user = form.save()
-			mac = form.save()
+			Usertable.objects.create(name=user,address=mac)
 			return HttpResponseRedirect('/accounts/login/')
-		p=Usertable(name=user,address=mac)
-		p.save()
 	else:
 		form = UserCreationForm()
 	return render_to_response('register.html',RequestContext(request,locals()))

@@ -4,20 +4,20 @@ from django.shortcuts import render_to_response
 from sdn_mysite.views import login, index
 from django.contrib import auth
 from django.template import RequestContext
-from models import Usertable
+from controller.models import Usertable
 import os
 import socket
 
 SOCKFILE = '/tmp/hello_sock'
 
 def vlan_admin(request):
-	
-	users = {"Ray":"00:00:00:00:00:01",
-				"Han":"00:00:00:00:00:02",
-				"Mira":"00:00:00:00:00:03",
-				"Rou":"00:00:00:00:00:04",
-				"Firi":"00:00:00:00:00:05",
-				"Haha":"00:00:00:00:00:06"}
+	users = Usertable.objects.all()
+	# users = {"Ray":"00:00:00:00:00:01",
+	# 			"Han":"00:00:00:00:00:02",
+	# 			"Mira":"00:00:00:00:00:03",
+	# 			"Rou":"00:00:00:00:00:04",
+	# 			"Firi":"00:00:00:00:00:05",
+	# 			"Haha":"00:00:00:00:00:06"}
 	
 	user_v = {"Ray":"1", "Han":"2", "Mira":"3",
 				"Rou":"3", "Firi":"4", "Haha":"4"}
@@ -28,8 +28,8 @@ def vlan_admin(request):
 		
 	if request.method == 'GET':
 		vtable = {}
-		for name, mac in users.items():
-			vtable.update({ mac : user_v[name] })
+		for u in users:
+			vtable.update({ u.address : user_v[u.name] })
 
 		print(vtable)
 
@@ -40,8 +40,8 @@ def vlan_admin(request):
 		try:
 			sock.connect(SOCKFILE)
 			sock.sendall(data)
-		except Exception, ex:
-			print ex
+		except Exception as ex:
+			print(ex)
 			print("connet error")
 
 		return render_to_response('vlan_admin.html', RequestContext(request,locals()))
@@ -58,8 +58,8 @@ def vlan_admin(request):
 		try:
 			sock.connect(SOCKFILE)
 			sock.sendall(data)
-		except Exception, ex:
-			print ex
+		except Exception as ex:
+			print(ex)
 			print("connet error")
 
 		return render_to_response('vlan_admin.html', RequestContext(request,locals()))

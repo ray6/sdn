@@ -3,79 +3,65 @@
 	<head>
 		<title>Index</title>
 		<meta charset="utf-8">
-		<link rel="stylesheet" type="text/css" href="./semantic.min.css">
-
 	</head>
 	<style type="text/css">
-		body{
-			overflow: hidden;
+		body {
+			margin: 0;
 		}
-		
-		ul {
+		ul.navbar {
 			position: fixed;
 			top: 0;
+			width: 100%;
 			padding: 0;
 			margin: 0;
-			width: 100%;
-			height: 51px;
 			background-color: #333;
 			list-style-type: none;
 			overflow: hidden;
+
 		}
-		.main {
-			position: absolute;
+		
+		ul.navbar li {
 			float: left;
-			padding: 16px 21px;
-			text-align: center;
-			color: #fff;
-			font-size: 20px;
-			background-color: 
+    		/*border-left: 1px solid #bbb;
+    		border-right: 1px solid #bbb;*/
+
 		}
-		li a {
-			float: right;
+		ul.navbar li a {
 			text-decoration: none;
+			text-align: center;
 			display: block;
-			color: #fff;
-			text-align: center;
-			padding: 16px 21px;
-			font-size: 20px;
+			padding: 14px 16px;
+			color: white;
+
 		}
-		li a:hover {
-			background-color: #ff9999;
-			color: #000;
-		}
-		.tblock {
-			margin-top: 80px
-		}
-		h1 {
-			text-align: center;
-		}
-		p {
-			text-align: center;
-			font-size: 20px;
+		.active:hover {
+    		background-color: #111;
 		}
 	</style>
 	<body>
-		
+		<ul style="" class="navbar">
+  			<li><a class="active" href="#home">User Interface</a></li>
+  			{% if request.user.is_authenticated %}
+  				<li style="float: right;"><a href="/accounts/logout/"> Logout </a></li>
+  				<li style="float: right;" ><a class="user" href="#User">{{request.user}}</a></li>
+  			{% else %}
+  				<li style="float: right;"><a href="/accounts/register">register</a></li>
+  			{% endif %}
+		</ul>
+		<h2>User</h2>
 		{% if request.user.is_authenticated %}
-			
-			<ul>
-				<li class="main">SDN Network</li>
-				<li><a href="/accounts/logout/">log out</a></li>
-			</ul>
+			<p>{{ request.user }} ~ You are login.
+			<a href="/accounts/logout/"> Logout </a>
+			</p>
+			<form action= "" method="post">{% csrf_token %}
 
-			<div class="tblock">
-				<h1>Welcome, {{ request.user }}</h1>
-				<p>Your MAC Address : {{ mac }}</p>
-			</div>
+			<p> Your Mac Address : {{ mac }} </p>
 			
 		{% else %}
-			<div class="tblock">
-				<h1>Oops!</h1>
-				<p>You're not a member.</p>
-				<p>Create a account?  <a href="/accounts/register">Click here!</a></p>
-			</div>
+			<p>You are not login.<a href="/accounts/login">Login</a></p>
+			<p>If you don't have any account, please <a href="/accounts/register">register.</a></p>
 		{% endif %}
+		
 
 	</body>
 </html>
