@@ -35,13 +35,13 @@
 							<div class="name">
 							{{ user }}
 							</div>
-							<div class="sub header">{{ users|dict:user }}
+							<div class="sub header">{{ user.address }}
 							</div>
 						</div>
 					</h4>
 				</td>
 				<td>
-					vlan{{ user_v|dict:user }}
+					vlan{{ user.vlan }}
 				</td>
 			</tr>
 			{% endfor %}
