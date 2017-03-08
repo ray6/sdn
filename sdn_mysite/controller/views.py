@@ -11,25 +11,13 @@ import socket
 SOCKFILE = '/tmp/hello_sock'
 
 def vlan_admin(request):
-	users = Usertable.objects.all()
-	# users = {"Ray":"00:00:00:00:00:01",
-	# 			"Han":"00:00:00:00:00:02",
-	# 			"Mira":"00:00:00:00:00:03",
-	# 			"Rou":"00:00:00:00:00:04",
-	# 			"Firi":"00:00:00:00:00:05",
-	# 			"Haha":"00:00:00:00:00:06"}
-	
-	user_v = {"Ray":"1", "Han":"2", "Mira":"3",
-				"Rou":"3", "Firi":"4", "Haha":"4"}
-	
+	users = Usertable.objects.all()	
 	vlan_list = ["1", "2", "3", "4", "5", "6", "7", "8"]
-
-
 		
 	if request.method == 'GET':
 		vtable = {}
 		for u in users:
-			vtable.update({ u.address : user_v[u.name] })
+			vtable.update({ u.address : u.vlan })
 
 		print(vtable)
 
@@ -51,8 +39,9 @@ def vlan_admin(request):
 		#get data from the POST request
 		post_user = request.POST['user']
 		post_vlan = request.POST['vlan'][4]
-		user_v[post_user] = post_vlan
-		new={users[post_user] : user_v[post_user]}
+		obj, created = Usertable.objects.update_or_create(name=post_user, defaults={'vlan': post_vlan})
+
+		new={obj.address : obj.vlan}
 		data = vtable_trans(new)
 
 		try:
