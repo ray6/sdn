@@ -12,9 +12,9 @@
 <body>
 
 <ul class="navbar">
-  <li><a class="active" href="#home">Vlan Management</a></li>
-  <li style="float: right;" ><a class="user" href="#User">User Name</a></li>
-  <li style="float: right;" ><a class="user" href="accounts/logout/">Logout</a></li>
+  <li class="main">Vlan Management</li>
+  <li><a class="user" href="#User">{{ request.user }}</a></li>
+  <li><a class="user" href="accounts/logout/">Logout</a></li>
 </ul>
 <div class="member" style="margin-top: 70px;padding: 20px;">
 

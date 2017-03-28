@@ -13,8 +13,9 @@ SOCKFILE = '/tmp/hello_sock'
 def vlan_admin(request):
 	users = Usertable.objects.all()	
 	vlan_list = ["1", "2", "3", "4", "5", "6", "7", "8"]
-		
+
 	if request.method == 'GET':
+		print('GET')
 		vtable = {}
 		for u in users:
 			vtable.update({ u.address : u.vlan })
@@ -27,7 +28,7 @@ def vlan_admin(request):
 
 		try:
 			sock.connect(SOCKFILE)
-			sock.sendall(data)
+			sock.sendall(bytes(data, 'UTF-8'))
 		except Exception as ex:
 			print(ex)
 			print("connet error")
@@ -46,7 +47,7 @@ def vlan_admin(request):
 
 		try:
 			sock.connect(SOCKFILE)
-			sock.sendall(data)
+			sock.sendall(bytes(data, 'UTF-8'))
 		except Exception as ex:
 			print(ex)
 			print("connet error")
