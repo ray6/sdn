@@ -14,12 +14,14 @@ class ShortestRestSwitch(shortest_path_switch.ShortestPath):
 	def __init__(self, *args, **kwargs):
 		super(ShortestRestSwitch, self).__init__(*args, **kwargs)
 		self.sock = None
-		self.config - {}
+		self.config = {}
 		self.start_sock_server()
 
 	def set_vtable(self, host, vlan):
-		if self.vtable[host] != vlan:
+		if self.vtable.get(host) != vlan:
 			self.vtable.update({host:vlan})
+			print("Change")
+			print(self.vtable)
 			self.ShortestPathDeleteFlow(self.default_datapath, host)
 
 	def recv_loop(self):
@@ -27,9 +29,11 @@ class ShortestRestSwitch(shortest_path_switch.ShortestPath):
 		while True:
 			data = self.sock.recv(1024)
 			msg = json.loads(data)
-
+			print("print msg")
+			print(msg)
 			for host, vlan in msg.items():
-				self.set_vtable(host, vlan)
+				self.set_vtable(str(host), str(vlan))
+
 
 	def start_sock_server(self):
 		if os.path.exists(SOCKFILE):
