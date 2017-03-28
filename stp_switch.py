@@ -19,18 +19,18 @@ class SimpleSwitch13(app_manager.RyuApp):
 		self.mac_to_port = {}
 		self.stp = kwargs['stplib']
 
-		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2', 
-			       '00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3',
-			       '00:00:00:00:00:05':'2','00:00:00:00:00:06':'3'}
+		self.vtable = {'00:00:00:00:00:01':'2', '00:00:00:00:00:02':'2',
+					'00:00:00:00:00:03':'3', '00:00:00:00:00:04':'3',
+					'00:00:00:00:00:05':'2','00:00:00:00:00:06':'3'}
 		self.mac_to_ip = {'00:00:00:00:00:01':'10.0.0.1', '00:00:00:00:00:02':'10.0.0.2',
-				  '00:00:00:00:00:03':'10.0.0.3', '00:00:00:00:00:04':'10.0.0.4',
-				  '00:00:00:00:00:05':'10.0.0.5','00:00:00:00:00:06':'10.0.0.6'}
+					'00:00:00:00:00:03':'10.0.0.3', '00:00:00:00:00:04':'10.0.0.4',
+					'00:00:00:00:00:05':'10.0.0.5','00:00:00:00:00:06':'10.0.0.6'}
 		self.ip_to_mac = {'10.0.0.1':'00:00:00:00:00:01', '10.0.0.2':'00:00:00:00:00:02',
-				  '10.0.0.3':'00:00:00:00:00:03', '10.0.0.4':'00:00:00:00:00:04',
-				  '10.0.0.5':'00:00:00:00:00:05','10.0.0.6':'00:00:00:00:00:06'}
+					'10.0.0.3':'00:00:00:00:00:03', '10.0.0.4':'00:00:00:00:00:04',
+					'10.0.0.5':'00:00:00:00:00:05','10.0.0.6':'00:00:00:00:00:06'}
 		self.hw_addr=None
 		self.ip_addr=None
-		self.stable={} 
+		self.stable={}
 
 		#datapath to pid table
 		# Sample of stplib config.
@@ -60,8 +60,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
 
-		inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-		                                     actions)]
+		inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,actions)]
 
 		if buffer_id:
 			mod = parser.OFPFlowMod(datapath=datapath,buffer_id=buffer_id,
@@ -109,25 +108,25 @@ class SimpleSwitch13(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 
 		for dst in self.mac_to_port[datapath.id].keys():
-		    match = parser.OFPMatch(eth_dst=dst)
-		    mod = parser.OFPFlowMod(
-		        datapath, command=ofproto.OFPFC_DELETE,
-		        out_port=ofproto.OFPP_ANY, out_group=ofproto.OFPG_ANY,
-		        priority=1, match=match)
+			match = parser.OFPMatch(eth_dst=dst)
+			mod = parser.OFPFlowMod(
+				datapath, command=ofproto.OFPFC_DELETE,
+				out_port=ofproto.OFPP_ANY, out_group=ofproto.OFPG_ANY,
+				priority=1, match=match)
 		datapath.send_msg(mod)
 	def _handle_arp(self,datapath,in_port,pkt_eth,pkt_arp):
 		if pkt_arp.opcode != arp.ARP_REQUEST:
 			return
 		pkt = packet.Packet()
 		pkt.add_protocol(ethernet.ethernet(ethertype=pkt_eth.ethertype,
-						   dst=pkt_eth.src,src=self.hw_addr))
+						dst=pkt_eth.src,src=self.hw_addr))
 		pkt.add_protocol(arp.arp(opcode=arp.ARP_REPLY,
-					 src_mac=self.hw_addr,
-					 src_ip=self.ip_addr,
-					 dst_mac=pkt_arp.src_mac,
-					 dst_ip=pkt_arp.src_ip))
+					src_mac=self.hw_addr,
+					src_ip=self.ip_addr,
+					dst_mac=pkt_arp.src_mac,
+					dst_ip=pkt_arp.src_ip))
 		self._send_packet(datapath,in_port,pkt)
-					
+
 
 	def _send_packet(self,datapath,in_port,pkt):
 		ofproto = datapath.ofproto
@@ -138,8 +137,8 @@ class SimpleSwitch13(app_manager.RyuApp):
 		data = pkt.data
 		actions = [parser.OFPActionOutput(port=in_port)]
 		out = parser.OFPPacketOut(datapath=datapath,buffer_id=ofproto.OFP_NO_BUFFER,
-					  in_port=ofproto.OFPP_CONTROLLER,actions=actions,
-					  data=data)
+									in_port=ofproto.OFPP_CONTROLLER,actions=actions,
+									data=data)
 		datapath.send_msg(out)
 	@set_ev_cls(stplib.EventPacketIn, MAIN_DISPATCHER)
 	def _packet_in_handler(self, ev):
@@ -164,7 +163,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 			return
 
 		if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            		# ignore lldp packet
+            # ignore lldp packet
 			return
 		dst = eth.dst
 		src = eth.src
@@ -179,7 +178,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 			print("The table has changed")
 			print("\n")
 			for key,value in self.stable.items():
-				
+
 			#	if not key==1:
 				print("Delete flow on dpid: %d\n"%(key))
 
@@ -188,7 +187,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 				del self.mac_to_port[dpid]
 				match=parser.OFPMatch(eth_src=src)
 				self.del_flow(value,match,msg.buffer_id)
-				del self.mac_to_port[dpid]	
+				del self.mac_to_port[dpid]
 				print("Match eth_dst=eth_src=%s\n"%(src))
 
 			#	self.mac_to_port[key][src]=1				
@@ -197,19 +196,19 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 
 		if dst in self.mac_to_port[dpid]:
-		    	if self.vtable.get(src) != None and self.vtable.get(src) == self.vtable.get(dst):
+			if self.vtable.get(src) != None and self.vtable.get(src) == self.vtable.get(dst):
 				out_port = self.mac_to_port[dpid][dst]
 				actions = [parser.OFPActionOutput(out_port)]
 			else:
 				out_port = ofproto.OFPP_FLOOD
 		else:
-		    	out_port = ofproto.OFPP_FLOOD
+			out_port = ofproto.OFPP_FLOOD
 			actions = [parser.OFPActionOutput(out_port)]
 
 		# install a flow to avoid packet_in next time
 		if out_port != ofproto.OFPP_FLOOD:
-		    	match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-		    	if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+			match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
+			if msg.buffer_id != ofproto.OFP_NO_BUFFER:
 				self.add_flow(datapath, 1, match,actions,msg.buffer_id)
 				return
 			else:
@@ -218,10 +217,12 @@ class SimpleSwitch13(app_manager.RyuApp):
 		if actions != None:
 			data = None
 			if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-		    		data = msg.data
+				data = msg.data
 
-			out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,in_port=in_port,
-				          actions=actions, data=data)
+			out = parser.OFPPacketOut(datapath=datapath,
+										buffer_id=msg.buffer_id,
+										in_port=in_port,
+										actions=actions, data=data)
 			datapath.send_msg(out)
 
 	@set_ev_cls(stplib.EventTopologyChange, MAIN_DISPATCHER)
@@ -231,20 +232,20 @@ class SimpleSwitch13(app_manager.RyuApp):
 		msg = 'Receive topology change event. Flush MAC table.'
 		self.logger.debug("[dpid=%s] %s", dpid_str, msg)
 	#	print("changed topo")
-		
+
 		if dp.id in self.mac_to_port:
-		    self.delete_flow(dp)
-		    del self.mac_to_port[dp.id]
-		 #   print("delete flow")
+			self.delete_flow(dp)
+			del self.mac_to_port[dp.id]
+			#   print("delete flow")
 
 	@set_ev_cls(stplib.EventPortStateChange, MAIN_DISPATCHER)
         def _port_state_change_handler(self, ev):
 		dpid_str = dpid_lib.dpid_to_str(ev.dp.id)
 		of_state = {stplib.PORT_STATE_DISABLE: 'DISABLE',
-		            stplib.PORT_STATE_BLOCK: 'BLOCK',
-		            stplib.PORT_STATE_LISTEN: 'LISTEN',
-		            stplib.PORT_STATE_LEARN: 'LEARN',
-		            stplib.PORT_STATE_FORWARD: 'FORWARD'}
+					stplib.PORT_STATE_BLOCK: 'BLOCK',
+					stplib.PORT_STATE_LISTEN: 'LISTEN',
+					stplib.PORT_STATE_LEARN: 'LEARN',
+					stplib.PORT_STATE_FORWARD: 'FORWARD'}
 		self.logger.debug("[dpid=%s][port=%d] state=%s",dpid_str, ev.port_no, of_state[ev.port_state])
 
 
