@@ -55,6 +55,7 @@ class ShortestPath(app_manager.RyuApp):
 		self.host_enter = 0
 		self.path_db = []
 		self.default_datapath = None
+		self.default_ev = None
 		#Changed as different topo
 		self.host_num = 6
 
@@ -91,6 +92,7 @@ class ShortestPath(app_manager.RyuApp):
 
 	@set_ev_cls(event.EventSwitchEnter)
 	def get_topology_data(self, ev):
+	#Topo information of switch
 		self.switch_enter += 1
 
 		#Get Switch List
@@ -243,7 +245,7 @@ class ShortestPath(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 		dpid = datapath.id
 		in_port = msg.match['in_port']
-
+		self.default_ev = ev
 		#initial
 		out_port = None
 

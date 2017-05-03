@@ -33,6 +33,8 @@ class ShortestRestSwitch(shortest_path_switch.ShortestPath):
 			print(msg)
 			for host, vlan in msg.items():
 				self.set_vtable(str(host), str(vlan))
+			if self.host_enter >= self.host_num:
+				self.default_path_install(self.default_ev)
 
 
 	def start_sock_server(self):
