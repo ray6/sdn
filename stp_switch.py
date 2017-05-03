@@ -35,9 +35,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 		#datapath to pid table
 		# Sample of stplib config.
 		#  please refer to stplib.Stp.set_config() for details.
-		config = {dpid_lib.str_to_dpid('0000000000000001'):
+		#config = {dpid_lib.str_to_dpid('0000000000000001'):
 
-		self.stp.set_config(config)
+		#self.stp.set_config(config)
 
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
@@ -85,7 +85,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 		out_group=ofproto.OFPG_ANY
 		flag=0
 	#	match = parser.OFPMatch()
-		action = None
+		actions = None
 		inst = None
 
 		if buffer_id:
@@ -113,7 +113,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 				datapath, command=ofproto.OFPFC_DELETE,
 				out_port=ofproto.OFPP_ANY, out_group=ofproto.OFPG_ANY,
 				priority=1, match=match)
-		datapath.send_msg(mod)
+			datapath.send_msg(mod)
 	def _handle_arp(self,datapath,in_port,pkt_eth,pkt_arp):
 		if pkt_arp.opcode != arp.ARP_REQUEST:
 			return
@@ -140,6 +140,16 @@ class SimpleSwitch13(app_manager.RyuApp):
 									in_port=ofproto.OFPP_CONTROLLER,actions=actions,
 									data=data)
 		datapath.send_msg(out)
+
+	def STPDeleteFlow(self, datapath, *args):
+		parser = datapath.ofproto_parser
+		for key, value in self.stable.items():
+			for arg in args:
+				match = parser.OFPMatch(eth_dst=arg)
+				self.del_flow(value, match)
+				match = parser.OFPMatch(eth_src=arg)
+				self.del_flow(value, match)
+
 	@set_ev_cls(stplib.EventPacketIn, MAIN_DISPATCHER)
 	def _packet_in_handler(self, ev):
 		if ev.msg.msg_len < ev.msg.total_len:
@@ -175,23 +185,21 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 		# learn a mac address to avoid FLOOD next time.
 		if in_port != self.mac_to_port.get(dpid).get(src):
-			print("The table has changed")
-			print("\n")
-			for key,value in self.stable.items():
 
-			#	if not key==1:
-				print("Delete flow on dpid: %d\n"%(key))
+			#Delet the flow which has the match that src address = src,
+			#or dst address = src.
+			self.STPDeleteFlow(datapath, src)
 
-				match=parser.OFPMatch(eth_dst=src)
-				self.del_flow(value,match,msg.buffer_id)
-				del self.mac_to_port[dpid]
-				match=parser.OFPMatch(eth_src=src)
-				self.del_flow(value,match,msg.buffer_id)
-				del self.mac_to_port[dpid]
-				print("Match eth_dst=eth_src=%s\n"%(src))
+			#Fix the floaw table
+			#when find the match value, delete it and drop out from for loop
+			for key, value in self.mac_to_port.items():
+				if value.has_key(src):
+					for mac, port in value.items():
+						if mac == src:
+							del self.mac_to_port[key][mac]
+					break
 
-			#	self.mac_to_port[key][src]=1				
-			print("Fix the table")
+			#Add new correct value into mac_to_port table.
 			self.mac_to_port[dpid][src] = in_port
 
 
@@ -226,17 +234,15 @@ class SimpleSwitch13(app_manager.RyuApp):
 			datapath.send_msg(out)
 
 	@set_ev_cls(stplib.EventTopologyChange, MAIN_DISPATCHER)
-        def _topology_change_handler(self, ev):
+	def _topology_change_handler(self, ev):
 		dp = ev.dp
 		dpid_str = dpid_lib.dpid_to_str(dp.id)
 		msg = 'Receive topology change event. Flush MAC table.'
 		self.logger.debug("[dpid=%s] %s", dpid_str, msg)
-	#	print("changed topo")
 
 		if dp.id in self.mac_to_port:
 			self.delete_flow(dp)
 			del self.mac_to_port[dp.id]
-			#   print("delete flow")
 
 	@set_ev_cls(stplib.EventPortStateChange, MAIN_DISPATCHER)
         def _port_state_change_handler(self, ev):
