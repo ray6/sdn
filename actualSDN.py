@@ -22,18 +22,10 @@ class actualSDN_switch(app_manager.RyuApp):
         super(actualSDN_switch, self).__init__(*args, **kwargs)
 
         self.vtable = {}
+        # default vlan table
         self.vtable = {'20:89:84:bf:3c:df':'1',
                         'b8:88:e3:c2:dc:5a':'1',
                         'b8:88:e3:d9:ea:5d':'1'}
-        # self.mac_to_ip = {
-        # '20:89:84:bf:3c:df':'192.168.10.1',
-        # 'b8:88:e3:c2:dc:5a':'192.168.10.2',
-        # 'b8:88:e3:d9:ea:5d':'192.168.10.4'}
-
-        # self.ip_to_mac = {
-        # '192.168.10.1':'20:89:84:bf:3c:df',
-        # '192.168.10.2':'b8:88:e3:c2:dc:5a',
-        # '192.168.10.4':'b8:88:e3:d9:ea:5d'}
         self.mac_to_ip = {}
         self.ip_to_mac = {}
         self.mac_to_port = {}
@@ -235,12 +227,8 @@ class actualSDN_switch(app_manager.RyuApp):
 
         #Add Flow along with the path
         for k, sw in enumerate(self.switches):
-            #print('k, sw', k,sw)
             if sw in path:
                 next = path[path.index(sw)+1]
-                # print(path)
-                # print('next',next)
-                # print('test',self.directed_Topo[sw][next])
                 out_port = self.directed_Topo[sw][next]['port']
 
                 actions = [self.switches_dp[k].ofproto_parser.OFPActionOutput(out_port)]
@@ -299,7 +287,7 @@ class actualSDN_switch(app_manager.RyuApp):
         self.mac_to_port.setdefault(dpid, {})
         self.mac_to_dp.setdefault(src, datapath)
         self.stable.setdefault(dpid, datapath)
-        #self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+        self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
         if src in self.vtable:
             
@@ -339,17 +327,6 @@ class actualSDN_switch(app_manager.RyuApp):
                     #Add new flows and path
                     self.default_path_install(ev)
         
-        # if src in self.vtable:
-        #     if in_port != self.mac_to_port.get(dpid).get(src):
-        #         #delete relate flow
-        #         self.SimpleSwitchDeleteFlow(datapath, src)
-        #         #update th mac_to_port table
-        #         self.mac_to_port[dpid][src] = in_port
-
-        # learn a mac address to avoid FLOOD next time.
-        #self.mac_to_port[dpid][src] = in_port
-        
-
         if dst in self.mac_to_port[dpid]:
             if self.vtable[src] != None and self.vtable[src] == self.vtable[dst]:
                 out_port = self.mac_to_port[dpid][dst]
