@@ -43,7 +43,6 @@ class actualSDN_Django_Switch(actualSDN.actualSDN_switch):
 
 
 	def start_sock_server(self):
-		#print('test\n')
 		if os.path.exists(SOCKFILE):
 			os.unlink(SOCKFILE)
 		self.sock = hub.socket.socket(hub.socket.AF_UNIX, hub.socket.SOCK_DGRAM)
