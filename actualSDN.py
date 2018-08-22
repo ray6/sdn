@@ -26,6 +26,15 @@ class actualSDN_switch(app_manager.RyuApp):
         self.vtable = {'20:89:84:bf:3c:df':'1',
                         'b8:88:e3:c2:dc:5a':'1',
                         'b8:88:e3:d9:ea:5d':'1'}
+        # self.mac_to_ip = {
+        # '20:89:84:bf:3c:df':'192.168.10.1',
+        # 'b8:88:e3:c2:dc:5a':'192.168.10.2',
+        # 'b8:88:e3:d9:ea:5d':'192.168.10.4'}
+
+        # self.ip_to_mac = {
+        # '192.168.10.1':'20:89:84:bf:3c:df',
+        # '192.168.10.2':'b8:88:e3:c2:dc:5a',
+        # '192.168.10.4':'b8:88:e3:d9:ea:5d'}
         self.mac_to_ip = {}
         self.ip_to_mac = {}
         self.mac_to_port = {}
