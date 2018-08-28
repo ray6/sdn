@@ -26,34 +26,27 @@ class actualSDN_switch(app_manager.RyuApp):
         self.vtable = {'20:89:84:bf:3c:df':'1',
                         'b8:88:e3:c2:dc:5a':'1',
                         'b8:88:e3:d9:ea:5d':'1'}
-        # self.mac_to_ip = {
-        # '20:89:84:bf:3c:df':'192.168.10.1',
-        # 'b8:88:e3:c2:dc:5a':'192.168.10.2',
-        # 'b8:88:e3:d9:ea:5d':'192.168.10.4'}
-
-        # self.ip_to_mac = {
-        # '192.168.10.1':'20:89:84:bf:3c:df',
-        # '192.168.10.2':'b8:88:e3:c2:dc:5a',
-        # '192.168.10.4':'b8:88:e3:d9:ea:5d'}
-        self.mac_to_ip = {}
-        self.ip_to_mac = {}
-        self.mac_to_port = {}
-        self.switch_table = {}
-        self.stable = {}
+        self.mac_to_ip = {} # mac <-> ip
+        self.ip_to_mac = {} # ip <-> mac
+        self.mac_to_port = {}   # host in which port
+        self.stable = {} #dpid<->datapath
         self.default_datapath = None
         self.default_ev = None
-        self.host_enter = 0
-        self.switch_enter = 0
-        self.mac_to_dp = {}
-        self.topology_api_app = self
-        self.directed_Topo = nx.DiGraph()
+        self.host_enter = 0 # host enter number
+        self.switch_enter = 0   # switch enter number
+        self.mac_to_dp = {} # mac <-> datapath
         self.switches = [] #all switches' dpid
         self.switches_dp = [] #all switches' datapath
-        self.path_db = []
-        self.switch_map={}
-        self.datapaths={}
+        # self.path_db = []   # store shortest path
+        
+        # monitor init
+        self.datapaths={}   # all datapaths
         self.monitor_thread = hub.spawn(self._monitor)
         self.bandwidth = {}
+
+        #networkx init
+        self.topology_api_app = self 
+        self.directed_Topo = nx.DiGraph()
         
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -66,13 +59,13 @@ class actualSDN_switch(app_manager.RyuApp):
         self.datapaths[datapath.id] = datapath
 
         self.default_datapath = datapath
-        self.switch_map.update({datapath.id: datapath}) 
+        
 
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
-        self.switch_table.setdefault(datapath.id,{})
-
+        
+        # read the mac_table(valid user) and put the information into the mac_to_ip and ip_to_mac
         with open('./mac_table.txt') as f:
             line = f.readlines()
         line = [x.strip('\n') for x in line]
@@ -82,8 +75,10 @@ class actualSDN_switch(app_manager.RyuApp):
             ip = tmp[1]
             self.mac_to_ip[mac] = ip
             self.ip_to_mac[ip] = mac
-        self.host_num = len(self.ip_to_mac)
+        #self.host_num = len(self.ip_to_mac)
+        self.host_num = 3
 
+    # _monitor, _request_stats adn _port_stats_reply_handler, the three functions are used when monitor the traffic
     def _monitor(self):
         while True:
             for dp in self.datapaths.values():
@@ -119,6 +114,7 @@ class actualSDN_switch(app_manager.RyuApp):
                 stat.tx_packets, stat.tx_bytes, speed)
 
                 self.bandwidth[index] = transfer_bytes
+           
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -134,6 +130,7 @@ class actualSDN_switch(app_manager.RyuApp):
         datapath.send_msg(mod)
         print('add flow!!')
 
+    # delete flow
     def del_flow(self, datapath, match):
         ofproto = datapath.ofproto
         ofproto_parser = datapath.ofproto_parser
@@ -142,6 +139,7 @@ class actualSDN_switch(app_manager.RyuApp):
         datapath.send_msg(mod)
         print('del flow')
 
+    # when src in topo and change port, this situation will run this function to delete flows which are relative the src.
     def ShortestPathDeleteFlow(self, datapath, *args):
         if datapath==None:
             return
@@ -155,6 +153,8 @@ class actualSDN_switch(app_manager.RyuApp):
                 match = ofproto_parser.OFPMatch(eth_src=arg)
                 self.del_flow(value, match)
         print('SP del flow end')
+
+    # handle arp package    
     def _handle_arp(self, datapath, in_port, pkt_ethernet, arp_pkt):
         if arp_pkt.opcode != arp.ARP_REQUEST:
             return
@@ -175,6 +175,8 @@ class actualSDN_switch(app_manager.RyuApp):
 
         self._send_packet(datapath, in_port, pkt)
         print('arp', get_mac, pkt_ethernet.src,)
+
+    # add host in the direct topo
     def AddHost(self, dpid, host, in_port):
         #Add host into directed_topo
         self.directed_Topo.add_node(host)
@@ -209,6 +211,8 @@ class actualSDN_switch(app_manager.RyuApp):
 
             print('****List Of Links****')
             print(self.directed_Topo.edges(data = True))
+    # install direct topo. 
+    # if the hosts in the same vlan, the function will install paths between them.
     def default_path_install(self, ev):
         for src in self.vtable:
             for dst in self.vtable:
@@ -220,20 +224,11 @@ class actualSDN_switch(app_manager.RyuApp):
 
                         self.ShortestPathInstall(ev, src, dst)
 
-
-                    else:
-                        actions = []
-                        match = self.mac_to_dp[src].ofproto_parser.OFPMatch(eth_src=src,eth_dst=dst)
-                        self.add_flow(self.mac_to_dp[src], 1, match, actions)
-
+    # Using networkx, the paths between the hosts in the same vlan are the shortest.
     def ShortestPathInstall(self, ev, src, dst):
         #Compute shortest path
         path = nx.shortest_path(self.directed_Topo, src, dst)
-        
-        #Backup path
-        str_path = str(path).replace(', ', ',')
-        self.path_db.append(path)
-
+  
         #Add Flow along with the path
         for k, sw in enumerate(self.switches):
             if sw in path:
@@ -262,6 +257,7 @@ class actualSDN_switch(app_manager.RyuApp):
 
         datapath.send_msg(out)
 
+    # the main function
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         # If you hit this you might want to increase
@@ -298,8 +294,9 @@ class actualSDN_switch(app_manager.RyuApp):
         self.stable.setdefault(dpid, datapath)
         self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
+        # when the src is valid
         if src in self.vtable:
-            
+            # if the valid src not in the direct topo
             if not self.directed_Topo.has_node(src):
                                 
                 print('add', src)
@@ -308,6 +305,7 @@ class actualSDN_switch(app_manager.RyuApp):
                 self.mac_to_port[dpid][src] = in_port
                 self.host_enter += 1
 
+                # if entered host > 3, it will install shortest path
                 if self.host_enter == self.host_num:
                     self.default_path_install(ev)
 
@@ -336,6 +334,7 @@ class actualSDN_switch(app_manager.RyuApp):
                     #Add new flows and path
                     self.default_path_install(ev)
         
+        # when the dst is in the direct topo
         if dst in self.mac_to_port[dpid]:
             if self.vtable[src] != None and self.vtable[src] == self.vtable[dst]:
                 out_port = self.mac_to_port[dpid][dst]
