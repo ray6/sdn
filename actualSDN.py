@@ -23,9 +23,9 @@ class actualSDN_switch(app_manager.RyuApp):
 
         self.vtable = {}
         # default vlan table
-        self.vtable = {'20:89:84:bf:3c:df':'1',
-                        'b8:88:e3:c2:dc:5a':'1',
-                        'b8:88:e3:d9:ea:5d':'1'}
+        self.vtable = {'00:00:00:00:00:01':'1',
+                        '00:00:00:00:00:02':'1',
+                        '00:00:00:00:00:03':'1'}
         self.mac_to_ip = {} # mac <-> ip
         self.ip_to_mac = {} # ip <-> mac
         self.mac_to_port = {}   # host in which port
